@@ -133,8 +133,8 @@ class TradingBot:
     
 
 if __name__ == '__main__':
-    config_file = '/home/tamal/projects/TradingBot/config.json'
-    historical_data = '/home/tamal/projects/TradingBot/BTC_USDT_500_days.csv'
+    config_file = '/workspaces/CryptoTradingBot/config.json' #'/home/tamal/projects/TradingBot/config.json'
+    historical_data = '/workspaces/CryptoTradingBot/BTC_USDT_500_days.csv' #'/home/tamal/projects/TradingBot/BTC_USDT_500_days.csv'
     
     bot = TradingBot(config_file, exchange='binance', name='Willi')
     bot.run(historical_data)

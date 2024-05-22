@@ -5,36 +5,62 @@ import sklearn
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, accuracy_score
 # import talib
 np.random.seed(42)
 
-def buy_condition(row): #entry
-        if row['MA-st'] > row['MA-lt']:
-            return True
-        else:
-            return False
+# def buy_condition(row): #entry
+#         if row['MA-st'] > row['MA-lt']:
+#             return True
+#         else:
+#             return False
         
-    #     return row['MA-st'] > row['MA-lt']:
+#     #     return row['MA-st'] > row['MA-lt']:
 
-def sell_condition(row): #exit
-    if row['MA-st'] < row['MA-lt']:
-        return True
-    else:
-        return False
+# def sell_condition(row): #exit
+#     if row['MA-st'] < row['MA-lt']:
+#         return True
+#     else:
+#         return False
+
+signal_to_int = {
+        'long_entry': 1,
+        'long_exit': 2,
+        'short_entry': 3,
+        'short_exit': 4,
+        # 'hold' : 0
+    }
+int_to_signal = {v:k for k,v in signal_to_int.items()}
+
+
     
 def create_labels(data):
-    data['labels'] = np.where(data['close'].shift(-1) > data['close'], 1, 0)
+    # data['labels'] = np.where(data['close'].shift(-1) > data['close'], 1, 0)
+    # print(data.tail())
+
+    # Define conditions with shift
+    data['long_entry'] = (data['MA-st'] > data['MA-lt']) & (data['MA-st'].shift(1) <= data['MA-lt'].shift(1))
+    data['long_exit'] = (data['MA-st'] < data['MA-lt']) & (data['MA-st'].shift(1) >= data['MA-lt'].shift(1))
+    data['short_entry'] = (data['MA-st'] < data['MA-lt']) & (data['MA-st'].shift(1) > data['MA-lt'].shift(1))
+    data['short_exit'] = (data['MA-st'] > data['MA-lt']) & (data['MA-st'].shift(1) < data['MA-lt'].shift(1))
+
+    # print('Long Entries: ', data['long_entry'].sum())
+    # print('Long Exits: ', data['long_exit'].sum())
+    # print('Short Entries: ', data['short_entry'].sum())
+    # print('Short Exits: ', data['short_exit'].sum())
+
     return data
 
 def prepare_data(data, test_split=0.2):
     # Drop NaN
     data.dropna(inplace=True)
     data = create_labels(data)
+    data['label'] = data.apply(label_data, axis=1)
     # Features and target
-    features = ['RSI', 'ATR']
+    features = ['close', 'RSI', 'ATR', 'Trend']
     X = data[features]
-    y = data['labels']
+    y = data['label']
+    # y = data[['long_entry', 'long_exit', 'short_entry', 'short_exit']]
 
     # Splitting the data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
@@ -44,10 +70,42 @@ def prepare_data(data, test_split=0.2):
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     return X_train_scaled, y_train, X_test_scaled, y_test
-    
 
+
+
+
+def label_data(row):
+    
+    # print(int_to_signal)
+
+    for condition, label in signal_to_int.items():
+        if row[condition]:
+            return label
+    
+    # Default case if no conditions are met
+    # return 0
+
+
+
+    if row['long_entry']:
+        return 1  # Label for long_entry
+    elif row['long_exit']:
+        return 2  # Label for long_exit
+    elif row['short_entry']:
+        return 3  # Label for short_entry
+    elif row['short_exit']:
+        return 4  # Label for short_exit
+    else:
+        return 0  # Label for hold
+    
+# def train_model(X, y):
+    # model = RandomForestClassifier(n_estimators=100, random_state=42)
+    # model.fit
+
+
+# def 
 def generate_signals():
-    print('generating Signals')
+    # print('generating Signals')
     pass
     
 
@@ -79,15 +137,16 @@ class Strategy:
         
         self.data = populate_indicators(self.data)
         self.previous_row = self.data.iloc[0]
-        
-        self.data['short_entry'] = ''
-        self.data['short_exit'] = ''
-        self.data['long_entry'] = ''
-        self.data['long_exit'] = ''
-        
         self.run()
-        X_train, y_train, X_test, y_test = prepare_data(self.data)
-        print(X_train.shape, y_train.shape, X_test, y_test.shape)
+        
+        # self.data['short_entry'] = ''
+        # self.data['short_exit'] = ''
+        # self.data['long_entry'] = ''
+        # self.data['long_exit'] = ''
+        
+        
+        # X_train, y_train, X_test, y_test = prepare_data(self.data)
+        # print(X_train.shape, y_train.shape, X_test.shape, y_test.shape)
         
     
     
@@ -144,24 +203,48 @@ class Strategy:
     
     def run(self):
         print('running')
+
+        self.data['short_entry'] = ''
+        self.data['short_exit'] = ''
+        self.data['long_entry'] = ''
+        self.data['long_exit'] = ''
         
-        for index, row in self.data.iterrows():
-            price = row['close']
-            self.data.at[index, 'long_exit'] = self.check_long_exit_condition(row, self.previous_row)    
-            self.data.at[index, 'short_exit'] = self.check_short_exit_condition(row, self.previous_row)
-            self.data.at[index, 'long_entry'] = self.check_long_entry_condition(row, self.previous_row)
-            self.data.at[index, 'short_entry'] = self.check_short_entry_condition(row, self.previous_row)
-            self.previous_row = row
+        
+        X_train, y_train, X_test, y_test = prepare_data(self.data)
+
+        #Train Model
+        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model.fit(X_train, y_train)
+
+        # Evaluate Model
+        predictions = model.predict(X_test)
+        print(int_to_signal.keys(), type(predictions[0]))
+        prediction_signals = [int_to_signal[pred] if pred != 0 else 'Hold' for pred in predictions]
+        print('Predictions: ', prediction_signals)
+        print('Actual: ', y_test.tolist())
+        print(classification_report(y_test, predictions))
+        print("Accuracy:", accuracy_score(y_test, predictions))
+
+        
+        # for index, row in self.data.iterrows():
+        #     price = row['close']
+        #     self.data.at[index, 'long_exit'] = self.check_long_exit_condition(row, self.previous_row)    
+        #     self.data.at[index, 'short_exit'] = self.check_short_exit_condition(row, self.previous_row)
+        #     self.data.at[index, 'long_entry'] = self.check_long_entry_condition(row, self.previous_row)
+        #     self.data.at[index, 'short_entry'] = self.check_short_entry_condition(row, self.previous_row)
+        #     self.previous_row = row
         # return self.data
         # pass
         
 
 if __name__ == "__main__":
-    historical_data = '/home/tamal/projects/TradingBot/BTC_USDT_500_days.csv'
+    # historical_data = '/home/tamal/projects/TradingBot/BTC_USDT_500_days.csv'
+    historical_data = '/workspaces/CryptoTradingBot/BTC_USDT_500_days.csv'
     data = pd.read_csv(historical_data)
     # print(data)
     s = Strategy(data)
     data = s.data
+    # print(data.head())
     # print(data)
     
     
