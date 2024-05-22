@@ -47,6 +47,7 @@ def prepare_data(data, test_split=0.2):
     
 
 def generate_signals():
+    print('generating Signals')
     pass
     
 
