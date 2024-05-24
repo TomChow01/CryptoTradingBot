@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import wandb
 from strategy import *
 
 name_base = "BTC"
@@ -25,6 +26,8 @@ exposure = 2           # position size in percent
 # exposure = 'all'       # use this instead if you want 100% of your portfolio to be used for each trade
 trade_fees = 0.1       # in percent
 leverage = 5
+
+
 
 
 
@@ -114,7 +117,7 @@ def compute_long_tp_level(row, entry_price, stop_loss_price):
     return row['open'] * 1.1
     
 
-def analyze_backtest(data, backtest_orders):
+def analyze_backtest(data, backtest_orders, log_wandb=False):
     ## Profits
     show_unrealised = True
     show_realised = True
@@ -141,6 +144,9 @@ def analyze_backtest(data, backtest_orders):
         ax2.plot(data['timestamp'], data['realised_pnl'], color='gold', label='Bot (realised)', ls= '--')
     if show_hodl:
         ax2.plot(data['timestamp'], data['hodl'], color='purple', label='Hodl')
+        
+    
+    
     ax2.set_xlabel('Period', fontsize=18)
     ax2.set_ylabel('Net Profits (' + name_quote + ')', fontsize=18)
     ax2.tick_params(axis='both', which='major', labelsize=12, rotation = 45)
@@ -154,6 +160,20 @@ def analyze_backtest(data, backtest_orders):
     print(f" > Hodl net profits: {round(profits_hodl.iloc[-1],2)}%")
     print(f" > Net profits ratio Bot / Hodl: {round(data.iloc[-1]['unrealised_pnl']/data.iloc[-1]['hodl'],2)}")
     print(f' > SHARPE RATIO: {calculate_sharpe_ratio(data)}')
+    
+    if log_wandb:
+        wandb.log({
+            "Final balance Bot": round(data.iloc[-1]['unrealised_pnl'], 2),
+            "Final balance Hodl": round(data.iloc[-1]['hodl'], 2),
+            "Bot net profits (%)": round(profits_bot_unrealised.iloc[-1], 2),
+            "Hodl net profits (%)": round(profits_hodl.iloc[-1], 2),
+            "Net profits ratio Bot / Hodl": round(data.iloc[-1]['unrealised_pnl'] / data.iloc[-1]['hodl'], 2),
+            "Sharpe Ratio": calculate_sharpe_ratio(data)
+        })
+
+        # Log the plot as an image
+        plt.savefig("net_profits.png")
+        wandb.log({"Net Profits Plot": wandb.Image("net_profits.png")})
 
 
     ## Trades
@@ -245,7 +265,8 @@ def analyze_backtest(data, backtest_orders):
     print(f" > Total: {total_fee} {name_quote}")
     print(f" > Biggest: {biggest_fee} {name_quote}")
     print(f" > Average: {avg_fee} {name_quote} \n")
-    # plt.show()
+    ax1.plot(data['timestamp'], data['drawdown']*100, color='blue', label='Drawdown')
+    plt.show()
 
 def run_backtest(data):
 
@@ -383,8 +404,8 @@ def run_backtest(data):
         if order_in_progress != None:
             data.at[index, 'unrealised_pnl'] += position + calculate_pnl(entry_price, price, quantity, order_in_progress) #- fee
         data.at[index, 'hodl'] = initial_capital / data["close"].iloc[0] * price
-        data.at[index, 'drawdown'] = (data.at[index, 'unrealised_pnl'] - last_ath) / last_ath if last_ath else 0
+        data.at[index, 'drawdown'] = (data.at[index, 'realised_pnl'] - last_ath) / last_ath if last_ath else 0
 
         # previous_row = row
 
-    return data, orders
+    return data, orders 

@@ -50,7 +50,7 @@ class Strategy:
         self.data['long_entry'] = ''
         self.data['long_exit'] = ''
         
-        self.run()
+        # self.run()
     
     
     
@@ -113,5 +113,6 @@ class Strategy:
             self.data.at[index, 'long_entry'] = self.check_long_entry_condition(row, self.previous_row)
             self.data.at[index, 'short_entry'] = self.check_short_entry_condition(row, self.previous_row)
             self.previous_row = row
-        # return self.data
+        
+        return self.data
         # pass

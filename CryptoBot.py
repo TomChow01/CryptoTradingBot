@@ -17,18 +17,21 @@ import ccxt
 
 import ta
 import json
+import wandb
 
 from utils import getIP, log_in, load_config
 from strategy import populate_indicators, Strategy
+from strategy_ml import *
 from backtesting import *
 
 
 class TradingBot:
-    def __init__(self, config:str= 'config.json', exchange=None, name='Freedom 25'):
+    def __init__(self, config:str= 'config.json', exchange=None, name='Freedom 25', log_wandb=False):
         
         print(f'Hi I am {name}, To your service')
         self.config = load_config(config)
         self.exchange = exchange
+        self.log_wandb = log_wandb
         
         if self.exchange:
             try:
@@ -118,25 +121,35 @@ class TradingBot:
         # print(df.tail())
         # data = populate_indicators(df)
         data = df.rename(columns={'date':'timestamp'})
-        strategy_1 = Strategy(data, strategy='s1')
-        data = strategy_1.data
+        strategy_1 = Strategy(data)
+        data = strategy_1.run()
+        # data = strategy_1.data
         print('Long Entries: ', data['long_entry'].sum())
         print('Long Exits: ', data['long_exit'].sum())
         print('Short Entries: ', data['short_entry'].sum())
         print('Short Exits: ', data['short_exit'].sum())
+        # data['timestamp'] = 'time'  ## change it
         print(data.tail())
         data, backtest_orders = run_backtest(data)
-        analyze_backtest(data, backtest_orders)
+        analyze_backtest(data, backtest_orders, log_wandb=self.log_wandb)
         # print(data)
         # print(backtest_orders)
         # return data, backtest_orders
     
 
 if __name__ == '__main__':
-    config_file = '/workspaces/CryptoTradingBot/config.json' #'/home/tamal/projects/TradingBot/config.json'
-    historical_data = '/workspaces/CryptoTradingBot/BTC_USDT_500_days.csv' #'/home/tamal/projects/TradingBot/BTC_USDT_500_days.csv'
+    log_wandb = False
+    config_file = '/home/tamal/projects/TradingBot/config.json'
+    historical_data = '/home/tamal/projects/TradingBot/BTC_USDT_500_days.csv'
     
-    bot = TradingBot(config_file, exchange='binance', name='Willi')
+    
+    if log_wandb:
+        wandb.init(project="backtest_project",
+                entity= 'tomchow',
+                name='test')
+    
+    
+    bot = TradingBot(config_file, exchange='binance', name='Willi', log_wandb=log_wandb)
     bot.run(historical_data)
     # data, orders = bot.run(historical_data)
     # analyze_backtest(data, orders)
