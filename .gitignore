@@ -1,2 +1,6 @@
-api_keys.json
+*_keys.json
 wandb
+*.pyc
+__pycache__/*.pyc
+*.png
+*.csv

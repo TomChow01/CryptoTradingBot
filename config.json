@@ -3,15 +3,19 @@
     "symbol": "BTCUSDT",
     "max_open_trades": 3,
     "dry_run": false,
+    "timeframe": "1d",
+
     "backtest": {
+        "symbol": "BTCUSDT",
+        "name_quote": "USDT",
         "timeframe" : "1d",
         "starting_date_backtest" : "01 january 2019",
         "ending_date_backtest" :  "01 january 2022",
         "starting_date_dl" : "01 january 2018",
         "ending_date_dl" : "01 january 2022",
 
-        "initial_capital" : 1000, 
-        "exposue" : 2,           
+        "initial_capital" : 2000, 
+        "exposure" : 2,           
         "trade_fees" : 0.1, 
         "leverage" : 5,
 
@@ -20,6 +24,8 @@
 
         "ignore_tp" : false,
         "ignore_sl" : false,
-        "ignore_exit" : false
+        "ignore_exit" : false,
+
+        "log_wandb": false
     }
 }

@@ -1,22 +1,16 @@
 import ta
 import pandas as pd 
 
-def buy_condition(row): #entry
-        if row['MA-st'] > row['MA-lt']:
-            return True
-        else:
-            return False
+class Strategy:
+    def __init__(self, data, strategy='s1'):
+        self.data = data
+        self.strategy = strategy
         
-    #     return row['MA-st'] > row['MA-lt']:
+        self.data = self.populate_indicators(self.data)
+        self.previous_row = self.data.iloc[0]
 
-def sell_condition(row): #exit
-    if row['MA-st'] < row['MA-lt']:
-        return True
-    else:
-        return False
     
-
-def populate_indicators(data:pd.DataFrame):
+    def populate_indicators(self, data:pd.DataFrame):
         data['MA-st'] = ta.trend.sma_indicator(data['close'], 10)
         data['MA-lt'] = ta.trend.sma_indicator(data['close'], 40)
         data['EMAf'] = ta.trend.ema_indicator(data['close'], 10)
@@ -36,73 +30,32 @@ def populate_indicators(data:pd.DataFrame):
         # data["BB_avg"] = BB.bollinger_mavg()
         return data
     
-
-class Strategy:
-    def __init__(self, data, strategy='s1'):
-        self.data = data
-        self.strategy = strategy
-        
-        self.data = populate_indicators(self.data)
-        self.previous_row = self.data.iloc[0]
-        
-        self.data['short_entry'] = ''
-        self.data['short_exit'] = ''
-        self.data['long_entry'] = ''
-        self.data['long_exit'] = ''
-        
-        # self.run()
     
-    
-    
+    ## Entry Conditions
+    def check_long_entry_condition(self, row, previous_row):
+        if self.strategy == 's1':
+            return row['close'] > row['Trend'] and row['EMAf'] > row['EMAs'] and previous_row['EMAf'] < previous_row['EMAs'] and row['RSI'] < 70
+        else:
+            pass
+            
     def check_short_entry_condition(self, row, previous_row):
         if self.strategy == 's1':
             return row['close'] < row['Trend'] and row['EMAf'] < row['EMAs'] and previous_row['EMAf'] > previous_row['EMAs'] and row['RSI'] > 30
         else:
             pass
 
-
-    def check_short_exit_condition(self, row, previous_row):
-        if self.strategy == 's1': 
-            return row['EMAf'] > row['EMAs'] and previous_row['EMAf'] < previous_row['EMAs']
-        else:
-            pass
-
-
-    def compute_short_sl_level(self, row, entry_price):
-        if self.strategy == 's1': 
-            return entry_price + 2 * row['ATR']
-        else:
-            pass
-
-
-    def compute_short_tp_level(self, row, entry_price, stop_loss_price):
-        risk_reward_ratio = 4
-        if self.strategy == 's1':
-            return entry_price * (1 - risk_reward_ratio * (stop_loss_price / entry_price - 1))
-        else:
-            pass
-
-    def check_long_entry_condition(self, row, previous_row):
-        if self.strategy == 's1':
-            return row['close'] > row['Trend'] and row['EMAf'] > row['EMAs'] and previous_row['EMAf'] < previous_row['EMAs'] and row['RSI'] < 70
-        else:
-            pass
-
-
+    ## Exit Conditions
     def check_long_exit_condition(self, row, previous_row):
         if self.strategy == 's1':
             return row['EMAf'] < row['EMAs'] and previous_row['EMAf'] > previous_row['EMAs']
         else:
             pass
-
-
-    def compute_long_sl_level(self, row, entry_price):
-        return entry_price - 2 * row['ATR']
-
-
-    def compute_long_tp_level(row, entry_price, stop_loss_price):
-        risk_reward_ratio = 4
-        return entry_price * (1 + risk_reward_ratio * (1 - stop_loss_price / entry_price))
+        
+    def check_short_exit_condition(self, row, previous_row):
+        if self.strategy == 's1': 
+            return row['EMAf'] > row['EMAs'] and previous_row['EMAf'] < previous_row['EMAs']
+        else:
+            pass
     
     def run(self):
         
