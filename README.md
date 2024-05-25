@@ -1,1 +1,1 @@
-CryptoBot Project For Dia
+CryptoBot Project For DIA
