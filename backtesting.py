@@ -1,4 +1,5 @@
 import sys
+import random
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,7 +8,7 @@ from strategy import *
 
 
 class Backtest:
-    def __init__(self, config, data):
+    def __init__(self, config, data=None):
         print('*'*100)
         print('--------------STARTING BACKTESTING--------------')
         print('*'*100)
@@ -309,9 +310,11 @@ class Backtest:
                     order_in_progress = None
 
                 elif not self.config['backtest']['ignore_exit'] and row['long_exit']:#check_long_exit_condition(row, previous_row):
+                    price += price * random.uniform(-self.config['backtest']['latency']/100., self.config['backtest']['latency']/100)
                     pnl = self.calculate_pnl(entry_price, price, quantity, order_in_progress)
                     fee_exit = quantity * price * self.config['backtest']['trade_fees'] / 100
                     self.wallet += position - fee_entry + pnl - fee_exit
+                    # if self.config['backtest']['latency']:
                     self.record_order(row['timestamp'], 'long exit', price, 0, pnl - fee_exit - fee_entry, fee_exit)
                     order_in_progress = None
 
@@ -340,9 +343,11 @@ class Backtest:
                     order_in_progress = None
 
                 elif not self.config['backtest']['ignore_exit'] and row['short_exit']:  #check_short_exit_condition(row, previous_row):
+                    price += price * random.uniform(-self.config['backtest']['latency']/100., self.config['backtest']['latency']/100)
                     pnl = self.calculate_pnl(entry_price, price, quantity, order_in_progress)
                     fee_exit = quantity * price * self.config['backtest']['trade_fees'] / 100
                     self.wallet += position - fee_entry + pnl - fee_exit
+                    # if self.config['backtest']['latency']:
                     self.record_order(row['timestamp'], 'short exit', price, 0, pnl - fee_exit - fee_entry, fee_exit)
                     order_in_progress = None
 
@@ -358,12 +363,14 @@ class Backtest:
                         sl_price = self.compute_long_sl_level(row, price)
                     if not self.config['backtest']['ignore_tp']:
                         tp_price = self.compute_long_tp_level(row, price, sl_price)
+                    long_liquidation_price = self.calculate_liquidation_price(price, order_in_progress)
+                    price += price * random.uniform(-self.config['backtest']['latency']/100., self.config['backtest']['latency']/100)
                     entry_price = price
+                    # if self.config['backtest']['latency']:
                     position = self.calculate_position_size(price, sl_price)
                     amount = position * self.config['backtest']['leverage']
                     fee_entry = amount * self.config['backtest']['trade_fees'] / 100
                     quantity = (amount - fee_entry) / price
-                    long_liquidation_price = self.calculate_liquidation_price(price, order_in_progress)
                     if self.wallet > last_ath:
                         last_ath = self.wallet
 
@@ -379,12 +386,14 @@ class Backtest:
                         sl_price = self.compute_short_sl_level(row, price)
                     if not self.config['backtest']['ignore_tp']:
                         tp_price = self.compute_short_tp_level(row, price, sl_price)
+                    short_liquidation_price = self.calculate_liquidation_price(price, order_in_progress)
+                    price += price * random.uniform(-self.config['backtest']['latency']/100., self.config['backtest']['latency']/100)
                     entry_price = price
+                    # if self.config['backtest']['latency']:
                     position = self.calculate_position_size(price, sl_price)
                     amount = position * self.config['backtest']['leverage']
                     fee_entry = amount * self.config['backtest']['trade_fees'] / 100
                     quantity = (amount - fee_entry) / price
-                    short_liquidation_price = self.calculate_liquidation_price(price, order_in_progress)
                     self.wallet -= position
                     self.record_order(row['timestamp'], 'short entry', price, amount-fee_entry, -fee_entry, fee_entry)
 

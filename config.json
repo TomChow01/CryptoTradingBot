@@ -2,19 +2,21 @@
     "bot_name": "Freedom 26",
     "symbol": "BTCUSDT",
     "max_open_trades": 3,
-    "dry_run": false,
-    "timeframe": "1d",
+    "mode": "backtest",
+    "timeframe" : "1d",
+    "n_days": 1000,
+    
 
     "backtest": {
         "symbol": "BTCUSDT",
         "name_quote": "USDT",
-        "timeframe" : "1d",
+        "strategy": "ml", 
         "starting_date_backtest" : "01 january 2019",
         "ending_date_backtest" :  "01 january 2022",
         "starting_date_dl" : "01 january 2018",
         "ending_date_dl" : "01 january 2022",
 
-        "initial_capital" : 2000, 
+        "initial_capital" : 1000, 
         "exposure" : 2,           
         "trade_fees" : 0.1, 
         "leverage" : 5,
@@ -26,6 +28,30 @@
         "ignore_sl" : false,
         "ignore_exit" : false,
 
+        "latency": 0.1,
+
         "log_wandb": false
+    },
+
+    "dry_run": {
+        "symbol": "BTCUSDT",
+        "name_quote": "USDT",
+        "timeframe" : "1m",
+        "wallet": 1000,
+        "exposure" : "all",           
+        "trade_fees" : 0.0, 
+        "leverage" : 5,         
+        "ignore_shorts" : false,
+        "ignore_longs" : false,
+
+        "ignore_tp" : false,
+        "ignore_sl" : false,
+        "ignore_exit" : false,
+
+        "latency": 1,
+
+        "log_wandb": false
+
+        
     }
 }

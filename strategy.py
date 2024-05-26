@@ -5,11 +5,17 @@ class Strategy:
     def __init__(self, data, strategy='s1'):
         self.data = data
         self.strategy = strategy
-        
-        self.data = self.populate_indicators(self.data)
-        self.previous_row = self.data.iloc[0]
 
-    
+        self.data = self.populate_indicators(self.data)
+        self.data['long_entry'] = False 
+        self.data['short_entry'] = False
+        self.data['long_exit'] = False
+        self.data['short_exit'] = False
+        self.previous_row = self.data.iloc[0]
+        
+        
+
+    ### =============================================Modify===========================================================
     def populate_indicators(self, data:pd.DataFrame):
         data['MA-st'] = ta.trend.sma_indicator(data['close'], 10)
         data['MA-lt'] = ta.trend.sma_indicator(data['close'], 40)
@@ -28,34 +34,31 @@ class Strategy:
         # data["BB_lower"] = BB.bollinger_lband()
         # data["BB_upper"] = BB.bollinger_hband()
         # data["BB_avg"] = BB.bollinger_mavg()
+        # print(data.tail())
         return data
     
-    
+    ## Strategies: [RSI]
     ## Entry Conditions
     def check_long_entry_condition(self, row, previous_row):
-        if self.strategy == 's1':
-            return row['close'] > row['Trend'] and row['EMAf'] > row['EMAs'] and previous_row['EMAf'] < previous_row['EMAs'] and row['RSI'] < 70
-        else:
-            pass
-            
+        # return row['RSI'] < 30
+        return row['close'] > row['Trend'] and row['EMAf'] > row['EMAs'] and previous_row['EMAf'] < previous_row['EMAs'] and row['RSI'] < 70
+   
     def check_short_entry_condition(self, row, previous_row):
-        if self.strategy == 's1':
-            return row['close'] < row['Trend'] and row['EMAf'] < row['EMAs'] and previous_row['EMAf'] > previous_row['EMAs'] and row['RSI'] > 30
-        else:
-            pass
+        # return row['RSI'] > 70
+        return row['close'] < row['Trend'] and row['EMAf'] < row['EMAs'] and previous_row['EMAf'] > previous_row['EMAs'] and row['RSI'] > 30
 
-    ## Exit Conditions
+
+    ### Exit Conditions
     def check_long_exit_condition(self, row, previous_row):
-        if self.strategy == 's1':
-            return row['EMAf'] < row['EMAs'] and previous_row['EMAf'] > previous_row['EMAs']
-        else:
-            pass
+        # return row['RSI'] > 70
+        return row['EMAf'] < row['EMAs'] and previous_row['EMAf'] > previous_row['EMAs']
+               
+    def check_short_exit_condition(self, row, previous_row): 
+        # return row['RSI'] < 30
+        return row['EMAf'] > row['EMAs'] and previous_row['EMAf'] < previous_row['EMAs']
         
-    def check_short_exit_condition(self, row, previous_row):
-        if self.strategy == 's1': 
-            return row['EMAf'] > row['EMAs'] and previous_row['EMAf'] < previous_row['EMAs']
-        else:
-            pass
+    ## =======================================================================================================================
+
     
     def run(self):
         

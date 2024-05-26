@@ -16,6 +16,12 @@ class MLStrategy:
         self.strategy = strategy
         
         self.data = self.populate_indicators(self.data)
+        self.data['long_entry'] = False 
+        self.data['short_entry'] = False
+        self.data['long_exit'] = False
+        self.data['short_exit'] = False
+        
+        
 
     def populate_indicators(self, data:pd.DataFrame):
         data['MA-st'] = ta.trend.sma_indicator(data['close'], 10)
@@ -48,8 +54,8 @@ class MLStrategy:
         self.data['long_entry'] = np.where(self.data['pct_change'] > 0.01, True, False)
         self.data['short_entry'] = np.where(self.data['pct_change'] < 0.01, True, False)
         # Exit
-        self.data['long_exit'] = np.where(self.data['pct_change'] < 0., True, False)
-        self.data['short_exit'] = np.where(self.data['pct_change'] > 0, True, False)
+        # self.data['long_exit'] = np.where(self.data['pct_change'] < 0., True, False)
+        # self.data['short_exit'] = np.where(self.data['pct_change'] > 0, True, False)
 
         ## Entry Exit: Logic 2
         # # Entry
@@ -78,7 +84,9 @@ class MLStrategy:
         features = ['open', 'high', 'low', 'close', 'RSI', 'ATR', 'Trend']
         
         X = self.data[['timestamp'] + features]
-        y = self.data[['long_entry', 'long_exit', 'short_entry', 'short_exit']]  #['label']
+        y = self.data[['long_entry', 'short_entry']]
+        
+        # y = self.data[['long_entry', 'long_exit', 'short_entry', 'short_exit']]  #['label']
         
         
         # Splitting the data into training and testing sets
@@ -135,7 +143,11 @@ class MLStrategy:
         # print(classification_report(y_test, predictions))
         # print("Accuracy:", accuracy_score(y_test, predictions))
         
-        test_preds = pd.DataFrame(predictions, columns=['long_entry', 'long_exit', 'short_entry', 'short_exit'])
+        # test_preds = pd.DataFrame(predictions, columns=['long_entry', 'long_exit', 'short_entry', 'short_exit'])
+        test_preds = pd.DataFrame(predictions, columns=['long_entry', 'short_entry'])
+        test_preds_exit = pd.DataFrame(predictions, columns=['short_exit', 'long_exit'])
+        test_preds = pd.concat([test_preds, test_preds_exit], axis=1)
+        
         # print(test_preds.head())
         test_data = self.scaler.inverse_transform(X_test)
         # print('Test Data', test_data.shape, pd.DataFrame(test_timeframe).shape, test_preds.shape)
@@ -146,7 +158,7 @@ class MLStrategy:
         test_timeframe.reset_index(drop=True, inplace=True)
 
         final_data = pd.concat([test_timeframe, final_data], axis=1)
-        # print(final_data.shape)
+        # print(final_data.head(), final_data.shape)
         return final_data
 
 

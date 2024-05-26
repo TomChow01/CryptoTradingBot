@@ -31,7 +31,7 @@ from strategy_ml import MLStrategy
 class TradingBot:
     def __init__(self, config:str= 'config.json'):
         print('*'*100)
-        print('--------------STARTING THE BOT--------------')
+        print('-----------------STARTING THE BOT------------------')
         print('*'*100)
         
         
@@ -52,8 +52,7 @@ class TradingBot:
         
     def get_historical_prices(self, symbols:str='BTC/USDT', timeframe:str='1d', days:int = None, start: datetime = None, end: datetime = None, save:bool=False)-> pd.DataFrame:
         if self.exchange:
-            
-            
+                 
             if days:
                 # print(f'Fetching {symbols} Data of last {days} days')
                 from_timestamp = self.exchange.milliseconds() - days * 86400 * 1000
@@ -79,7 +78,7 @@ class TradingBot:
                 
 
             # bars = exchange.fetch_ohlcv(symbols, timeframe=timeframe, since=from_timestamp,  params={'until': to_timestamp}, limit=1000)
-            df = pd.DataFrame(bars[:-1], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df = pd.DataFrame(bars, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             df['timestamp'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
             df["close"] = pd.to_numeric(df["close"])
@@ -109,7 +108,7 @@ class TradingBot:
         df.set_index('timestamp', inplace=True)
 
         # Plot the data using mplfinance
-        fig, ax = mpf.plot(df, type='candle', style='charles', title='BTC/USDT OHLCV', volume=True, figsize=(20, 10), figratio=(20, 10), figscale=1.5, returnfig=True)
+        fig, ax = mpf.plot(df, type='candle', style='charles', title='BTC/USDT OHLCV', volume=True, figsize=(20, 10), figratio=(20, 10), figscale=1.5, returnfig=True, warn_too_much_data=2000)
         plot_filename = 'btc_usdt_ohlcv.png'
         fig.savefig(plot_filename)
 
@@ -119,7 +118,7 @@ class TradingBot:
     def run(self, historical_data=None):
         if self.exchange:
             try:
-                data = self.get_historical_prices(symbols=self.config['symbol'], timeframe='1d', days=500, save=True)
+                data = self.get_historical_prices(symbols=self.config['symbol'], timeframe=self.config['timeframe'], days=self.config['n_days'], save=True)
                 # df = self.get_historical_prices(symbols=self.config['symbol'], timeframe='1d', start='2019-01-01 00:00:00', end='2022-12-31 00:00:00', save=True)
                 # print(data.shape)
                 
@@ -136,8 +135,12 @@ class TradingBot:
         self.plot_data(data)
 
         # Apply Strategy on Data
-        strategy_1 = Strategy(data)
-        data = strategy_1.run()
+        if self.config['backtest']['strategy'] == 'technical indicator':
+            strategy = Strategy(data)
+        if self.config['backtest']['strategy'] == 'ml':
+            strategy = MLStrategy(data)
+            
+        data = strategy.run()
         
         # Backtest The Strategy
         backtest = Backtest(self.config, data)
